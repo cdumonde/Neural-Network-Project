@@ -1,18 +1,21 @@
-#ifndef LAYER
-#define LAYER
+#ifndef LAYER_H
+#define LAYER_H
 
 class Layer{
 
   public:
-      //constructeur
+      // Constructors
       Layer();
       Layer(size_t input_number, size_t output_number);
       
-      // membres
+      // Destructor
+      ~Layer();
+
+      // Members
       bool update_layer(vector<double> next_layer_errors);
-      vector<double> get_error(void); 
+      vector<double> get_error(); 
       
-      //operateur
+      // Operators
       Layer operator<<(const Layer);
 
     private: 
@@ -20,5 +23,4 @@ class Layer{
       vector<Neuron> neurons_tab;
       vector<double> errors;
 };
-
-#endif
+#endif // LAYER_H

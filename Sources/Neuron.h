@@ -1,5 +1,5 @@
-#ifndef NEURON 
-#define NEURON
+#ifndef NEURON_H 
+#define NEURON_H
 
 #include <stdio>
 //#include <
@@ -7,14 +7,23 @@
 class Neuron {
 
 public:
-  //constructeur
-  Neuron(void);
+  // Constructors
+  Neuron();
+
+  // Destructor
+  ~Neuron();
+  
+  // setter
   int set_input(vector<double> input);
-  double get_output(void);
-  void update(void);
+  
+  // getter
+  double get_output();
+  
+  // Members
+  void update();
 
 private:
-  //membre
+  // Members
   void output_calcul(void);
   virtual double threshold(void);
 
@@ -24,4 +33,4 @@ private:
   double output;
 
 };
-#endif
+#endif //NEURON_H
