@@ -1,3 +1,5 @@
+#ifndef LAYER
+#define LAYER
 
 class Layer{
 
@@ -8,7 +10,7 @@ class Layer{
       
       // membres
       bool update_layer(vector<double> next_layer_errors);
-      vector<double> get_error(void);
+      vector<double> get_error(void); 
       
       //operateur
       Layer operator<<(const Layer);
@@ -18,3 +20,5 @@ class Layer{
       vector<Neuron> neurons_tab;
       vector<double> errors;
 };
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef NEURON 
+#define NEURON
+
 #include <stdio>
 //#include <
 
@@ -21,3 +24,4 @@ private:
   double output;
 
 };
+#endif
