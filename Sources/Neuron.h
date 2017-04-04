@@ -7,8 +7,8 @@ class Neuron {
 
 public:
   // Constructors
-  Neuron();
-
+  Neuron(size_t input_number = 1, double learning_rate_definition = 0.5);
+  
   // Destructor
   ~Neuron();
   
@@ -23,13 +23,14 @@ public:
 
 private:
   // Members
-  void output_calcul(void);
-  virtual double threshold(void);
+  int output_calcul(void); 
+  virtual double threshold(double pre_output) = 0;  
 
   //attributs
   vector<double> weight;
   vector<double> input;
   double output;
+  const double learning_rate; 
 
 };
 #endif //NEURON_H
