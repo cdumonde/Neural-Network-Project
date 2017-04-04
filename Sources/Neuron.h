@@ -1,7 +1,6 @@
 #ifndef NEURON_H 
 #define NEURON_H
 
-#include <stdio>
 //#include <
 
 class Neuron {
