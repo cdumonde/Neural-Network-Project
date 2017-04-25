@@ -7,17 +7,18 @@ class Layer {
 
  public:
   // Constructor
-  Layer(size_t input_number, size_t output_number, );
+  Layer(size_t input_number, size_t output_number, TYPE_NEURON type = STEP, double learning_rate_def = 0.5 );
   
   // Destructor
   ~Layer();
   
   // Membres
   bool update_layer(vector<double> next_layer_errors);
+  void update_output();
   vector<double> get_errors();
   
   // Operator
-  Layer operator<<(const Layer);
+  vector<double> operator<<(const Layer);
   
  private:
   // Private Membre
