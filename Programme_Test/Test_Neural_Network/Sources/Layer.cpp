@@ -9,7 +9,7 @@ Layer::Layer(size_t input_number = 1, size_t output_number =1, TYPE_NEURON type 
     vector<Neuron::Neuron_Step> neuron_tab;
     vector<double> errors;
     vector<double> output;
-vector<double> input;
+    vector<double> input;
 
     if (output_number != 1)
       for (int i=0; i < output_number;i++){
@@ -63,12 +63,22 @@ bool Layer::update_layer(vector<double> next_layer_errors){
   }
 }
 
+void Layer::update_output(){
+
+  for(int browse_layer = 0; browse_layer <= neuron_tab.size(); browse_layer++){  // browse all the neurons 
+    neuron_tab[browse_layer].set_input(input);   // give the inputs to the neuron and calculate the output
+    output[browse_layer] = neuron_tab[browse_layer].get_output();  // stock the output calculated in the output vector of layer
+  }
+  
+  
+}
+
 vector<double> Layer::get_errors(){
   return errors;
 }
 
 /***** Operator *****/
-vector<double> Layer::operator>>(const Layer previous_layer){
+vector<double> Layer::operator<<(const Layer previous_layer){
   
   vector<double> input = previous_Layer.output;
   
@@ -77,7 +87,6 @@ vector<double> Layer::operator>>(const Layer previous_layer){
 
 /***** Private Membre *****/
 void update_input(){
-
   for(int i=0; i<neuron_tab.size(); i++) // browse all the neuron of layer
    	neuron_tab[i].set_input(input);
 }

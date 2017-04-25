@@ -30,13 +30,17 @@ Data::~Data()
 {
     data.clear();
 }
-
+// adder
+void Data::add_data(double d)
+{
+    data.push_back(d);
+}
 // getter
 size_t Data::get_size()
 {
     return data.size();
 }
-
+//printer
 void Data::print()
 {
     for(int i = 0; i < data.size(); i++)
@@ -44,4 +48,12 @@ void Data::print()
         cout << (int)data[i] << " ";
     }
     cout << endl;
+}
+void Data::clear()
+{
+    data.clear();
+}
+double Data::at(int index)
+{
+    return data[index];
 }

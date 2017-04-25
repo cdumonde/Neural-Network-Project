@@ -13,13 +13,15 @@ public:
   ~Neuron();
   
   // setter
-  int set_input(vector<double> input);
+  int set_input(vector<double> input); // give input to the neuron et calculate the output
   
   // getter
   double get_output();
+  int nb_input();
   
   // Members
-  void update();
+  /** Actualize the weight using the errors argument **/
+  void update(double error);
 
 private:
   // Members

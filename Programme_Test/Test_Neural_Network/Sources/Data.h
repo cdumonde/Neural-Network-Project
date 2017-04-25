@@ -18,9 +18,13 @@ public:
     // Destructor
     ~Data();
 
+    // adder
+    void   add_data(double d);
     // getter
     size_t get_size();
     void   print();
+    void   clear();
+    double at(int index);
 private:
     // Attribute
     vector<double> data;

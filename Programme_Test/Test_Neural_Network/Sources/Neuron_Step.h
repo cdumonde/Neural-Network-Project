@@ -5,6 +5,9 @@
 
 class Neuron_Step : public Neuron {
   
+ public:
+  Neuron_Step(size_t input_number = 1 , double learning_rate_definition = 0.5);
+
  private :
   virtual double threshold(double in);
 
