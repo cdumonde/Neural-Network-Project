@@ -3,15 +3,61 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <string>
-
+#include "fonctions.h"
+#include "Sources/Data.h"
 
 using namespace cv;
+using namespace std;
+
+vector<QPushButton*> label;
+vector<Data> datas;
+vector<Mat*> alphabet;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    label.push_back(ui->pushButton_4);
+    label.push_back(ui->pushButton_5);
+    label.push_back(ui->pushButton_6);
+    label.push_back(ui->pushButton_7);
+    label.push_back(ui->pushButton_8);
+    label.push_back(ui->pushButton_9);
+    label.push_back(ui->pushButton_10);
+    label.push_back(ui->pushButton_11);
+    label.push_back(ui->pushButton_12);
+    label.push_back(ui->pushButton_13);
+    label.push_back(ui->pushButton_14);
+    label.push_back(ui->pushButton_15);
+    label.push_back(ui->pushButton_16);
+    label.push_back(ui->pushButton_17);
+    label.push_back(ui->pushButton_18);
+    label.push_back(ui->pushButton_19);
+    label.push_back(ui->pushButton_20);
+    label.push_back(ui->pushButton_21);
+    label.push_back(ui->pushButton_22);
+    label.push_back(ui->pushButton_23);
+    label.push_back(ui->pushButton_24);
+    label.push_back(ui->pushButton_25);
+    label.push_back(ui->pushButton_26);
+    label.push_back(ui->pushButton_27);
+    label.push_back(ui->pushButton_28);
+    label.push_back(ui->pushButton_29);
+    label.push_back(ui->pushButton_30);
+    label.push_back(ui->pushButton_31);
+    label.push_back(ui->pushButton_32);
+    label.push_back(ui->pushButton_33);
+    label.push_back(ui->pushButton_34);
+    label.push_back(ui->pushButton_35);
+    label.push_back(ui->pushButton_36);
+    label.push_back(ui->pushButton_37);
+    label.push_back(ui->pushButton_38);
+    label.push_back(ui->pushButton_39);
+    for(unsigned int i = 0; i < label.size(); i++ )
+    {
+        label[i]->hide();
+    }
 }
 
 MainWindow::~MainWindow()
@@ -22,63 +68,60 @@ MainWindow::~MainWindow()
 void MainWindow::on_pushButton_clicked()
 {
     Mat image;
-    std::vector< std::vector<Point> > contours;
-    std::vector< std::vector<Point> > contours2;
-    std::vector<Vec4i> hierarchy;
-    std::vector<Mat*> alphabet;
-    image = imread("alphabet.jpg", IMREAD_GRAYSCALE);
-    threshold( image, image, 240, 255, THRESH_BINARY);
-    findContours(image,contours,hierarchy, RETR_TREE,CV_CHAIN_APPROX_SIMPLE );
-    int father;
-    for(unsigned int i = 0; i < contours.size(); i++ )
-       {
-        if((hierarchy[i])[3] < 0)
+    image = imread(ui->lineEdit_2->text().toUtf8().constData(), IMREAD_GRAYSCALE);
+    if(image.data)
+    {
+        ui->lineEdit->setText("");
+        alphabet = get_letter(image);
+
+        for(unsigned int i = 0; i < label.size(); i++ )
         {
-               father = i;
-               break;
+            label[i]->hide();
         }
-       }
-    for(unsigned int i = 0; i < contours.size(); i++ )
-       {
-        if((hierarchy[i])[3] == father)
+        for(unsigned int i = 0; i < alphabet.size(); i++ )
         {
-               contours2.push_back(contours[i]);
+            label[i]->setIcon(QIcon(QPixmap::fromImage(QImage(alphabet[i]->data, alphabet[i]->cols, alphabet[i]->rows, alphabet[i]->step, QImage::Format_Indexed8))));
+            label[i]->show();
         }
-       }
-      Point p_max, p_min;
-      Rect region_of_interest;
-      char name[2] = "1";
-      for(unsigned int i = 0; i < contours2.size(); i++ )
-         {
-            p_max.x = (contours2[i])[0].x;
-            p_max.y = (contours2[i])[0].y;
-            p_min.x = (contours2[i])[0].x;
-            p_min.y = (contours2[i])[0].y;
-            for(unsigned int j = 0; j < contours2[i].size(); j++)
-            {
-                p_max.x = max(p_max.x, (contours2[i])[j].x);
-                p_max.y = max(p_max.y, (contours2[i])[j].y);
-                p_min.x = min(p_min.x, (contours2[i])[j].x);
-                p_min.y = min(p_min.y, (contours2[i])[j].y);
-            }
-           region_of_interest = Rect(p_max, p_min);
-           if(region_of_interest.height > 10 && region_of_interest.width > 10)
-           {
-               Mat *tmp = new Mat(image(region_of_interest));
-                alphabet.push_back(tmp);
-           }
-         }
-      for(unsigned int i = 0; i < alphabet.size(); i++ )
-      {
-          name[0] = 'a' + i;
-          namedWindow( name, WINDOW_AUTOSIZE );
-          imshow( name,  *(alphabet[i]));
-      }
-    namedWindow( "Alphabet", WINDOW_AUTOSIZE );
-    imshow( "Alphabet", image );
+    }
+    else
+    {
+        ui->lineEdit->setText("Couldn't open file");
+    }
 }
 
 void MainWindow::on_pushButton_2_clicked()
 {
     exit(1);
+}
+
+void MainWindow::on_horizontalSlider_sliderMoved(int position)
+{
+    switch(position)
+    {
+        case 0:
+            ui->lineEdit->setText("Training...");
+        break;
+        case 1:
+            ui->lineEdit->setText("Detection...");
+        break;
+    }
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    datas.clear();
+    for(unsigned int i = 0; i < label.size(); i++ )
+    {
+        if(label[i]->isChecked())
+        {
+            datas.push_back(Data((unsigned char*)alphabet[i]->data, alphabet[i]->cols*alphabet[i]->rows));
+        }
+    }
+    cout << "Nombres d'images : " << datas.size() << endl;
+    for(unsigned int i = 0; i < datas.size(); i++ )
+    {
+        cout << "Image " << i << " : " << endl << "SIZE : " << datas[i].get_size() << endl ;
+        datas[i].print();
+    }
 }
