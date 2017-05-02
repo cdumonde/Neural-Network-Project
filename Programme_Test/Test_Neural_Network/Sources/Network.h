@@ -1,6 +1,8 @@
 #include "Data.h"
 #include "Layer.h"
 
+#define PROB_SUCCESS 0.5
+
 class Network
 {
 

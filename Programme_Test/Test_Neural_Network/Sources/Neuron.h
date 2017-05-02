@@ -1,23 +1,24 @@
 #ifndef NEURON_H 
 #define NEURON_H
 
-//#include <
+#include "Data.h"
 
 class Neuron {
 
 public:
+  
   // Constructors
-  Neuron(size_t input_number = 1, double learning_rate_definition = 0.5);
+  Neuron(size_t input_number = 1, double learning_rate_definition = 0.5);  
   
   // Destructor
   ~Neuron();
   
   // setter
-  int set_input(vector<double> input); // give input to the neuron et calculate the output
+  bool set_input(Data input); // give input to the neuron et calculate the output
   
   // getter
   double get_output();
-  int nb_input();
+  double get_error();
   
   // Members
   /** Actualize the weight using the errors argument **/
@@ -25,14 +26,15 @@ public:
 
 private:
   // Members
-  int output_calcul(void); 
+  bool output_calcul(void); 
   virtual double threshold(double pre_output) = 0;  
 
   //attributs
-  vector<double> weight;
-  vector<double> input;
+  vector<double> m_weight;
+  vector<double> m_input;
   double output;
-  const double learning_rate; 
+  double error;
+  double learning_rate; 
 
 };
 #endif //NEURON_H

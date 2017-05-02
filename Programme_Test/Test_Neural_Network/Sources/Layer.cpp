@@ -1,92 +1,74 @@
 #include "Layer.h"
   
 /**** Constructor ****/
-Layer::Layer(size_t input_number = 1, size_t output_number =1, TYPE_NEURON type = STEP, double learning_rate_def = 0.5 ){
-  
-  switch(type){
+Layer::Layer(size_t output_number, TYPE_NEURON type, double learning_rate_def) {
+  switch(type) {
     
   case STEP :
-    vector<Neuron::Neuron_Step> neuron_tab;
-    vector<double> errors;
-    vector<double> output;
-    vector<double> input;
-
-    if (output_number != 1)
-      for (int i=0; i < output_number;i++){
-	neuron_tab.push_back(new Neuron::Neuron_Step(input_number, learning_rate_def));
-	errors.push_back(0.0);
-	output.push_back(0.0);
-	input.push_back(0.0);
-      }
-    break;
+    for (int i = 0; i < output_number; i++) {
+      m_neurons_tab.push_back(new Neuron_Step(output_number, learning_rate_def));
+    }
+  break;
     
   case LINEAR :
-    vector<Neuron::Neuron_Linear> neuron_tab;
-    vector<double> errors;
-    vector<double> output;
-    vector<double> input;
-
-    if (output_number != 1)
-      for (int i=1; i < output_number;i++){
-	neuron_tab.push_back(new Neuron::Neuron_Linear(input_number, learning_rate_def));
-	errors.push_back(0.0);
-	output.push_back(0.0);
-	input.push_back(0.0);
-      }
-    break;
+    for (int i = 0; i < output_number; i++) {
+      m_neurons_tab.push_back(new Neuron_Linear(output_number, learning_rate_def));
+    }
+  break;
     
   case SIGMOID :
-    vector<Neuron::Neuron_Sigmoid> neuron_tab;
-    vector<double> errors;
-    vector<double> output;
-    vector<double> input;
-
-    if (output_number != 1)
-      for (int i=1; i < output_number;i++){
-	neuron_tab.push_back(new Neuron::Neuron_Sigmoid(input_number, learning_rate_def));
-	errors.push_back(0.0);
-	output.push_back(0.0);  
-	input.push_back(0.0);    
-      }
-    break;
+    for (int i=1; i < output_number;i++){
+      m_neurons_tab.push_back(new Neuron_Sigmoid(output_number, learning_rate_def));
+    }
+  break;
   }
 }
-
 /**** Destructor ****/
-Layer::~Layer(){}
-
-
+Layer::~Layer() {
+  for(int i = 0; i < m_neurons_tab.size(); i++) {
+    delete m_neurons_tab[i];
+  }
+}
 /***** Membres *****/
-bool Layer::update_layer(vector<double> next_layer_errors){
-  for(int i=0; i<= neuron_tab.size();i++){ // browse all neuron in the layer
-      neuron_tab[i].update(next_layer_errors[i]);  // call of update function of each 
+bool Layer::update_layer(vector<double> errors) {
+  for(int i = 0; i < m_neurons_tab.size(); i++) {
+      m_neurons_tab[i]->update(errors[i]);  // call of update function of each 
   }
+  return true;
 }
-
-void Layer::update_output(){
-
-  for(int browse_layer = 0; browse_layer <= neuron_tab.size(); browse_layer++){  // browse all the neurons 
-    neuron_tab[browse_layer].set_input(input);   // give the inputs to the neuron and calculate the output
-    output[browse_layer] = neuron_tab[browse_layer].get_output();  // stock the output calculated in the output vector of layer
+void Layer::update_outputs(Data input) {
+  m_output.clear();
+  for(int i = 0; i <= m_neurons_tab.size(); i++) {
+    m_neurons_tab[i]->set_input(input);   // give the inputs to the neuron and calculate the output
+    m_output.add_data(m_neurons_tab[i]->get_output());  // stock the output calculated in the output vector of layer
+  }  
+}
+Data Layer::get_outputs() {
+  return m_output;
+}
+vector<double> Layer::get_errors() {
+  m_errors.clear();
+  for(int i = 0; i < m_neurons_tab.size(); i++) {
+    m_errors.push_back(m_neurons_tab[i]->get_error());
   }
-  
-  
+  return m_errors;
 }
-
-vector<double> Layer::get_errors(){
-  return errors;
+size_t Layer::size(){
+  return m_neurons_tab.size();
 }
-
 /***** Operator *****/
-vector<double> Layer::operator<<(const Layer previous_layer){
-  
-  vector<double> input = previous_Layer.output;
-  
-  return input;
+Layer& operator<<(Layer &l0, Data const& l1) {
+  l0.update_outputs(l1);
+  return l0;
 }
-
-/***** Private Membre *****/
-void update_input(){
-  for(int i=0; i<neuron_tab.size(); i++) // browse all the neuron of layer
-   	neuron_tab[i].set_input(input);
+Layer& operator<<(Layer &l0, Layer& l1) {
+  l0.update_outputs(l1.get_outputs());
+  return l0;
+}
+Data& operator<<(Data &l0, Layer& l1) {
+  Data tmp = l1.get_outputs();
+  for(int i = 0; i < tmp.get_size(); i++) {
+    l0.add_data(tmp.at(i));
+  }
+  return l0;
 }

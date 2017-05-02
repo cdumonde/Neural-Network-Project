@@ -67,12 +67,15 @@ double Network::get_prob(string out) {
   return -1;
 }
 bool Network::get_prob(int i) {
-
+  if(m_outputs->at(i) > PROB_SUCCESS) {
+    return true;
+  }
+  return false;
 }
 void Network::output_calcul(Data input)
 {
-  m_In        <<      input;
-  m_Hide      <<      m_In;
-  m_Out       <<      m_Hide;
-  m_outputs   <<      m_Out;
+  *m_In        <<      input;
+  *m_Hide      <<      *m_In;
+  *m_Out       <<      *m_Hide;
+  *m_outputs   <<      *m_Out;
 }
