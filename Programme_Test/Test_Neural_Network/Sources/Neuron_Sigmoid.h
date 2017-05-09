@@ -1,15 +1,16 @@
-#ifndef _NEURON_SIGMOID_
-#define _NEURON_SIGMOID_
+#ifndef NEURON_SIGMOID_H
+#define NEURON_SIGMOID_H
+
+#define f(_x) (1.0/(1.0+exp(-_x)))
 
 #include "Neuron.h"
 
 class Neuron_Sigmoid : public Neuron {
-  
- public:
-    Neuron_Sigmoid(size_t input_number = 1 , double learning_rate_definition = 0.5);
 
- private :
-  virtual double threshold(double in);
-
-}
-#endif /* _NEURON_SIGMOID_ */
+public:
+  Neuron_Sigmoid();
+  ~Neuron_Sigmoid();
+  virtual double threshold(double value);
+  virtual double threshold_derivative();
+};
+#endif /* NEURON_SIGMOID_H */

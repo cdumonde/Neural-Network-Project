@@ -1,67 +1,61 @@
 #include "Neuron.h"
-
+static default_random_engine generator;
 // Constructors
-Neuron::Neuron(size_t input_number = 1 , double learning_rate_definition = 0.5){
-    
-  for (int cpt_size_in = 0; cpt_size_in < input_number, cpt_size_in++){   // running the vector
-    weight[cpt_size_in] = 1;                    // initialization of all weight to 1
-    input[cpt_size_in] = 0;                     // initialization of all entries to 0
+Neuron::Neuron(size_t input_number, double learning_rate_definition) {
+  uniform_real_distribution<double> distribution(-0.5, 0.5);
+  for (int i = 0; i < input_number; i++) {
+    m_weight.push_back(distribution(generator));                    // initialization of all weight to 1
+    m_input.push_back(0);                     // initialization of all entries to 0
   }
-
   learning_rate = learning_rate_definition;
-
-  output = 0;
+  m_output = 0;
 }
 
 // Destructor
 Neuron::~Neuron(){}
-  
+
 // re-initialize the input and calculate the outputs
-int Neuron::set_input(vector<double>  new_input){
-
-  for (int cpt_size = 0; cpt_size < new_input.size() , cpt_size++){   // running the vector                    // initialization of all weight to 1
-    input[cpt_size_in] = new_input[cpt_size_in] ;                     // initialization of all entries to 0
+bool Neuron::set_input(Data input) {
+  for (int i = 0; i < input.get_size(); i++) {
+    m_input[i] = input.at(i);
   }
-
-  if(output_calcul() != 0)
-    return 1;  // problem on output calculation
-  else 
-    return 0;  //  no problem
-
+  return output_calcul();
 }
-  
-// 
-double Neuron::get_output(){
-  return output;
+double Neuron::get_output() {
+  return m_output;
 }
-  
+void Neuron::set_weight(int index, double value) {
+  m_weight[index] = value;
+}
 // Actualize the weight using the errors argument
-void Neuron::update(double error){
-
-  for( int cpt_weight=0 , cpt_weight < weight.size(), cpt_weight++)
-    weight[cpt_weight] += learning_rate*error*input[cpt_weight];   
-
+void Neuron::update() {               //TODO
+  double pre_output = 0;
+  for(int i = 0; i < m_input.size(); i++){
+    pre_output += m_input[i]*m_weight[i];
+  }
+  for(int i = 0; i < m_weight.size(); i++) {
+    m_weight[i] = m_weight[i] + learning_rate*m_error*threshold_derivative(pre_output);
+  }
 }
-
-// calculate the output WARNING MAKE ADAPTATION WITH
-int output_calcul(void){
+vector<double> Neuron::get_error(double error) {
+  vector<double> errors;
+  m_error = error;
+  for(int i = 0; i < m_weight.size(); i++) {
+    errors.push_back(m_weight[i]*error);
+  }
+  return errors;
+}
+bool Neuron::output_calcul(void) {
   double pre_output=0;
-
-  if(input.size() != weight.size()){
-    cout << "Error: input and weight have not the same number" << endl
-      return 1;
+  if(m_input.size() != m_weight.size()){
+    return false;
   }
 
   // make the summation function
-  for(int cpt_sum=0, cpt_sum < input.size(), cpt_sum++){
-    pre_output += input[cpt_sum]*weight[cpt_sum];
-  } 
-
+  for(int i = 0; i < m_input.size(); i++){
+    pre_output += m_input[i]*m_weight[i];
+  }
   // make the threshold function detection
-  output = threshold(pre_output);
-  return 0;
-}
-
-int nb_input(void){
-  return input.size() ;
+  m_output = threshold(pre_output);
+  return true;
 }

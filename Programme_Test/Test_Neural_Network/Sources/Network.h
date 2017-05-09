@@ -1,30 +1,42 @@
-#include "Data.h"
-#include "Layer.h"
+#ifndef NETWORK_H
+#define NETWORK_H
 
-#define PROB_SUCCESS 0.5
+#include <random>
+#include "Data.h"
+#include "Neuron.h"
+#include "Neuron_Sigmoid.h"
+#include "Neuron_Step.h"
+#include "Neuron_Linear.h"
+
+enum NEURON_TYPE { STEP, LINEAR, SIGMOID };
 
 class Network
 {
+public:
+    Network(const size_t input_size, const size_t output_size, const size_t number_of_layers, NEURON_TYPE type, vector<string> labels);
+    ~Network();
+    string detect(Data input);
+    double train(double learning_rate, double momentum, vector<Data> data, string result);
+    vector<double> calcul_output(Data input);
+    void normalize(vector<double> output);
+    string get_max_prob();
+    double get_prob(string label);
+    
+private:
+    void initializeNeurons(NEURON_TYPE type);
+    void initializeWeights();
+    void backpropagate(vector<double> errors);
+    void updateweigths();
+    vector < vector <Neuron*> > m_neurons;
+    double ***m_weights;
+    double ***m_delta_weights;
+    double *m_probs;
+    double m_learning_rate;
+    double m_momentum;
+    vector<string> m_labels;
+    size_t m_input_size, m_output_size, m_hidden_size, m_number_of_layers;
 
- public :
-
-  /* Constructor */
-  Network(size_t input_number = 1, size_t output_number = 1, TYPE_NEURON type = STEP, double learning_rate_def = 0.5 , vector<string> labels = vector<string>());
-  ~Network();
-  /* Membre */
-  bool train(Data input, Data output);
-  void get_max_prob(double *prob, string *output);
-  double get_prob(string out);
-  bool get_prob(int i);
-  string detect(Data input);
-
- private :
-  /* Method */
-  void output_calcul(Data input);
-  /* Attributs */
-  Layer *m_In;
-  Layer *m_Out;
-  Layer *m_Hide;
-  Data *m_outputs;
-  vector<string> m_labels;
 };
+
+
+#endif // NETWORK_H

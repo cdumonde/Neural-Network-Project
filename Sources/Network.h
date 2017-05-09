@@ -1,24 +1,30 @@
-class Network{
+#include "Data.h"
+#include "Layer.h"
+
+#define PROB_SUCCESS 0.98
+
+class Network
+{
 
  public :
 
   /* Constructor */
-
-  // give the number of neuron in each layer
-  Network(size_t S_data_in, size_t N_input = 1, size_t N_hide = 1, size_t N_output = 1, TYPE_NEURON type = STEP, double learning_rate_def = 0.5 );
-  
+  Network(size_t input_number = 1, size_t output_number = 1, TYPE_NEURON type = STEP, double learning_rate_def = 0.5 , vector<string> labels = vector<string>());
+  ~Network();
   /* Membre */
-  bool train(Data input, Data output);
-  string detect(Data input);
+  bool train(Data input, string name);
   void get_max_prob(double *prob, string *output);
   double get_prob(string out);
+  bool get_prob(int i);
+  bool detect(Data input);
 
  private :
-
-  /* attributs */
-  Layer In;
-  Layer Out;
-  Layer Hide;
-  Data outputs;
-
-}
+  /* Method */
+  void output_calcul(Data input);
+  /* Attributs */
+  Layer *m_In;
+  Layer *m_Out;
+  Layer *m_Hide;
+  Data *m_outputs;
+  vector<string> m_labels;
+};

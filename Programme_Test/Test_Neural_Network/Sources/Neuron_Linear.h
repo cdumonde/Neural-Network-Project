@@ -1,15 +1,14 @@
-#ifndef _NEURON_LINEAR_
-#define _NEURON_LINEAR_
+#ifndef NEURON_LINEAR_H
+#define NEURON_LINEAR_H
 
 #include "Neuron.h"
 
 class Neuron_Linear : public Neuron {
 
- public:
-  Neuron_Linear(size_t input_number = 1 , double learning_rate_definition = 0.5);
-  
- private :
-  virtual double threshold(double in);
-
-}
-#endif /* _NEURON_LINEAR_ */
+public:
+  Neuron_Linear();
+  ~Neuron_Linear();
+  virtual double threshold(double value);
+  virtual double threshold_derivative();
+};
+#endif /* NEURON_LINEAR_H */

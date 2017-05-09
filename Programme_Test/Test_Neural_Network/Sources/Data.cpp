@@ -7,7 +7,7 @@ Data::Data()
 Data::Data(unsigned char *tab1D, size_t n)
 {
     data.clear();
-    for (int i = 0; i < n; i++)
+    for (unsigned int i = 0; i < n; i++)
     {
         data.push_back(tab1D[i]);
     }
@@ -15,9 +15,9 @@ Data::Data(unsigned char *tab1D, size_t n)
 Data::Data(unsigned char **tab2D, size_t x, size_t y)
 {
     data.clear();
-    for (int j = 0; j < y; j++)
+    for (unsigned int j = 0; j < y; j++)
     {
-        for (int i = 0; i < x; i++)
+        for (unsigned int i = 0; i < x; i++)
         {
             data.push_back(tab2D[i][j]);
         }
@@ -43,15 +43,23 @@ size_t Data::get_size()
 //printer
 void Data::print()
 {
-    for(int i = 0; i < data.size(); i++)
+    for(unsigned int i = 0; i < data.size(); i++)
     {
-        cout << (int)data[i] << " ";
+        cout << (double)data[i] << " ";
     }
     cout << endl;
 }
 void Data::clear()
 {
     data.clear();
+}
+void Data::normalize()
+{
+    for(unsigned int i = 0; i < data.size(); i++)
+    {
+        //data[i] /= 255.0;
+        data[i] = 255 - data[i];
+    }
 }
 double Data::at(int index)
 {

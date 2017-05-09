@@ -1,81 +1,336 @@
 #include "Network.h"
 
-using namespace std;
 
-Network::Network(size_t input_number, size_t output_number, TYPE_NEURON type, double learning_rate_def, vector<string> labels)
-{
-  m_In      = new Layer (input_number, type, learning_rate_def);
-  m_Hide    = new Layer (input_number, type, learning_rate_def);
-  m_Out     = new Layer (output_number, type, learning_rate_def);
-  m_outputs = new Data  ();
-  m_labels = labels;
+Network::Network(const size_t input_size, const size_t output_size, const size_t number_of_layers, NEURON_TYPE type, vector<string> labels) {
+    m_input_size = input_size;
+    m_output_size = output_size;
+    m_hidden_size = (input_size + output_size)/2;
+    m_number_of_layers = number_of_layers;
+    m_probs = new double[m_output_size];
+    m_labels = labels;
+    initializeNeurons(type);
+    initializeWeights();
 }
-Network::~Network()
-{
-  delete m_In;
-  delete m_Hide;
-  delete m_Out;
-  delete m_outputs;
-}
-bool Network::train(Data input, Data output) {
-  
-  output_calcul(input);
-  
-  vector<double> errors;
-
-  for (int i = 0; i <= m_Out->size(); i++) {
-    errors.push_back( m_outputs->at(i) - output.at(i) );
-  }
-  m_Out->update_layer(errors);
-  m_Hide->update_layer(m_Out->get_errors());
-  m_In->update_layer(m_Hide->get_errors());
-  
-  output_calcul(input);
-  
-  for (int i = 0; i <= m_Out->size(); i++) {
-    if(get_prob(i) != output.at(i)) {
-      return false;
+Network::~Network() {
+    for(unsigned int l = 0; l < m_number_of_layers; l++) {
+        if(l == 0) {
+            for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                delete m_neurons[l][i];
+            }
+        }
+        else if (l == m_number_of_layers - 1) {
+            for(unsigned int i = 0; i < m_output_size; i++) {
+                delete m_neurons[l][i];
+            }
+        }
+        else {
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                delete m_neurons[l][i];
+            }
+        }
     }
-  }
-  return true;
+    for(unsigned int l = 0; l < m_number_of_layers - 1; l++) {
+        if(l == 0) {
+            for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                delete[] m_weights[l][i];
+            }
+        }
+        else if (l == m_number_of_layers - 2) {
+            for(unsigned int i = 0; i < m_output_size; i++) {
+                delete[] m_weights[l][i];
+            }
+        }
+        else {
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                delete[] m_weights[l][i];
+            }
+        }
+        delete[] m_weights[l];
+    }
+    delete[] m_weights;
 }
 string Network::detect(Data input) {
-  string value;
-  double prob;
-  output_calcul(input);
-  get_max_prob(&prob, &value);
-  return value;
+    vector<double> output;
+    output = calcul_output(input);
+    normalize(output);
+    return get_max_prob();
 }
-void Network::get_max_prob(double *prob, string *output) {
-  double p = 0;
-  string o;
-  for(int i = 0; i < m_outputs->get_size(); i++) {
-    p = max(m_outputs->at(i), p);
-    if(p == m_outputs->at(i)) {
-      o = m_labels[i];
+double Network::train(double learning_rate, double momentum, vector<Data> data, string result) {
+    vector<double> intended_output;
+    vector<double> errors;
+    int incorrect_detections = 0;
+    m_learning_rate = learning_rate;
+    m_momentum = momentum > 1 ? 1 : momentum;
+    m_momentum = m_momentum < 0 ? 0 : m_momentum;
+    for(unsigned int i = 0; i < m_output_size; i++) {
+        if(m_labels[i] == result) {
+            intended_output.push_back(1);
+        }
+        else
+            intended_output.push_back(0);
     }
-  }
-  *prob = p;
-  *output = o;
-}
-double Network::get_prob(string out) {
-  for(int i = 0; i < m_labels.size(); i++) {
-    if(m_labels[i] == out) {
-      return m_outputs->at(i);
+    for(unsigned int i = 0; i < data.size(); i++) {
+        detect(data[i]);
+        for(unsigned int j = 0; j < m_output_size; j++) {
+            errors.push_back(m_probs[j]-intended_output[j]);
+        }
+        backpropagate(errors);
+        updateweigths();
     }
-  }
-  return -1;
+    for(unsigned int i = 0; i < data.size(); i++) {
+        detect(data[i]);
+        for(unsigned int j = 0; j < m_output_size; j++) {
+            if(intended_output[j] - m_probs[j] != 0) {
+                incorrect_detections++;
+            }
+        }
+    }
+    return (100 - ((double)(incorrect_detections)/(data.size()*m_output_size)*100));
 }
-bool Network::get_prob(int i) {
-  if(m_outputs->at(i) > PROB_SUCCESS) {
-    return true;
-  }
-  return false;
+void Network::initializeNeurons(NEURON_TYPE type) {
+    vector<Neuron*> tmp;
+    for(unsigned int i = 0; i < m_number_of_layers; i++) {
+        tmp.clear();
+        if(i == 0) {
+            for(unsigned int j = 0; j < m_input_size; j++) {
+                tmp.push_back(new Neuron_Linear());
+            }
+            tmp.push_back(new Neuron_Linear());
+            tmp[m_input_size]->set_input(-1);
+        }
+        else if (i == m_number_of_layers - 1) {
+            switch(type) {
+                case STEP :
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    tmp.push_back(new Neuron_Step());
+                }
+                break;
+                case SIGMOID :
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    tmp.push_back(new Neuron_Sigmoid());
+                }
+                break;
+                default :
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    tmp.push_back(new Neuron_Linear());
+                }
+                break;
+            }
+        }
+        else {
+            switch(type) {
+                case STEP :
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    tmp.push_back(new Neuron_Step());
+                }                break;
+                case SIGMOID :
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    tmp.push_back(new Neuron_Sigmoid());
+                }
+                break;
+                default :
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    tmp.push_back(new Neuron_Linear());
+                }
+                break;
+            }
+            tmp.push_back(new Neuron_Linear());
+            tmp[m_hidden_size]->set_input(-1);
+        }
+        m_neurons.push_back(tmp);
+    }
 }
-void Network::output_calcul(Data input)
-{
-  *m_In        <<      input;
-  *m_Hide      <<      *m_In;
-  *m_Out       <<      *m_Hide;
-  *m_outputs   <<      *m_Out;
+void Network::initializeWeights() {
+    default_random_engine generator;
+    uniform_real_distribution<double> distribution(-0.5, 0.5);
+    //weights
+    m_weights = new double**[m_number_of_layers - 1];
+    m_delta_weights = new double**[m_number_of_layers - 1];
+    for(unsigned int l = 0; l < m_number_of_layers - 1; l++) {
+        if(l == 0) {
+            m_weights[l] = new double*[m_input_size + 1];
+            for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                m_weights[l][i] = new double[m_hidden_size];
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    m_weights[l][i][j] = distribution(generator);
+                }
+            }
+            m_delta_weights[l] = new double*[m_input_size + 1];
+            for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                m_delta_weights[l][i] = new double[m_hidden_size];
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    m_delta_weights[l][i][j] = 0;
+                }
+            }
+        }
+        else if(l == m_number_of_layers - 2) {
+            m_weights[l] = new double*[m_hidden_size + 1];
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                m_weights[l][i] = new double[m_output_size];
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    m_weights[l][i][j] = distribution(generator);
+                }
+            }
+            m_delta_weights[l] = new double*[m_hidden_size + 1];
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                m_delta_weights[l][i] = new double[m_output_size];
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    m_delta_weights[l][i][j] = 0;
+                }
+            }
+        }
+        else {
+            m_weights[l] = new double*[m_hidden_size + 1];
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                m_weights[l][i] = new double[m_hidden_size];
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    m_weights[l][i][j] = distribution(generator);
+                }
+            }
+            m_delta_weights[l] = new double*[m_hidden_size + 1];
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                m_delta_weights[l][i] = new double[m_hidden_size];
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    m_delta_weights[l][i][j] = 0;
+                }
+            }
+        }
+    }
+
+}
+vector<double> Network::calcul_output(Data input) {
+    double sum;
+    vector<double> output;
+    for(unsigned int l = 0; l < m_number_of_layers; l++) {
+        sum = 0;
+        if(l == 0) {
+            for(unsigned int i = 0; i < m_input_size; i++) {
+                m_neurons[l][i]->set_input(input.at(i));
+            }
+        }
+        else if(l == 1) {
+            for(unsigned int j = 0; j < m_hidden_size; j++) {
+                for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                    sum += (m_neurons[l-1][i])->get_output()*m_weights[l-1][i][j];
+                }
+                m_neurons[l][j]->set_input(sum);
+            }
+        }
+        else if(l == m_number_of_layers - 1) {
+            for(unsigned int j = 0; j < m_output_size; j++) {
+                for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                    sum += (m_neurons[l-1][i])->get_output()*m_weights[l-1][i][j];
+                }
+                m_neurons[l][j]->set_input(sum);
+                output.push_back((m_neurons[l][j])->get_output());
+            }
+        }
+        else {
+            for(unsigned int j = 0; j < m_hidden_size; j++) {
+                for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                    sum += (m_neurons[l-1][i])->get_output()*m_weights[l-1][i][j];
+                }
+                m_neurons[l][j]->set_input(sum);
+            }
+        }
+    }
+    return output;
+}
+void Network::normalize(vector<double> output) {
+    for(unsigned int i = 0; i < m_output_size; i++) {
+        if(output[i] > 0.9) {
+            m_probs[i] = 1;
+        }
+        else if(output[i] < 0.1) {
+            m_probs[i] = 0;
+        }
+        else {
+            m_probs[i] = output[i];
+        }
+    }
+}
+string Network::get_max_prob() {
+    int index_max = 0;
+    string detection = m_labels[0];
+    for(unsigned int i = 0; i < m_output_size; i++) {
+        if(m_probs[i] > m_probs[index_max]) {
+            index_max = i;
+            detection = m_labels[i];
+        }
+    }
+    return detection;
+}
+double Network::get_prob(string label) {
+    for(unsigned int i = 0; i < m_output_size; i++) {
+        if(m_labels[i] == label) {
+            return m_probs[i];
+        }
+    }
+    return -1;
+}
+void Network::backpropagate(vector<double> errors) {
+    double sum;
+    for(unsigned int l = 0; l < m_number_of_layers; l++) {
+        sum = 0;
+        if(l == 0) {
+            for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    sum+=m_weights[l][i][j]*(m_neurons[l+1][j]->get_error());
+                }
+            }
+        }
+        else if(l == m_number_of_layers - 2) {
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    sum+=m_weights[l][i][j]*(m_neurons[l+1][j]->get_error());
+                }
+                cout << sum << endl;
+                m_neurons[l][i]->set_error(m_neurons[l][i]->threshold_derivative()*sum);
+            }
+        }
+        else if(l == m_number_of_layers - 1) {
+            for(unsigned int j = 0; j < m_output_size; j++) {
+                m_neurons[l][j]->set_error(m_neurons[l][j]->threshold_derivative()*errors[j]);
+                //cout << m_neurons[l][j]->get_error() << " ";
+            }
+            //cout << endl << endl;
+
+        }
+        else {
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    sum+=m_weights[l][i][j]*(m_neurons[l+1][j]->get_error());
+                }
+                m_neurons[l][i]->set_error(m_neurons[l][i]->threshold_derivative()*sum);
+            }
+        }
+    }
+}
+void Network::updateweigths() {
+    for(unsigned int l = 0; l < m_number_of_layers - 1; l++) {
+        if(l == 0) {
+            for(unsigned int i = 0; i < m_input_size + 1; i++) {
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    m_delta_weights[l][i][j] = m_momentum*m_learning_rate * m_neurons[l+1][j]->get_error() * m_neurons[l][i]->get_output() + (1 - m_momentum) * m_delta_weights[l][i][j];
+                    m_weights[l][i][j] += m_delta_weights[l][i][j];
+                }
+            }
+        }
+        else if(l == m_number_of_layers - 2) {
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                for(unsigned int j = 0; j < m_output_size; j++) {
+                    m_delta_weights[l][i][j] = m_momentum*m_learning_rate * m_neurons[l+1][j]->get_error() * m_neurons[l][i]->get_output() + (1 - m_momentum) * m_delta_weights[l][i][j];
+                    m_weights[l][i][j] += m_delta_weights[l][i][j];
+                }
+            }
+        }
+        else {
+            for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
+                for(unsigned int j = 0; j < m_hidden_size; j++) {
+                    m_delta_weights[l][i][j] = m_momentum*m_learning_rate * m_neurons[l+1][j]->get_error() * m_neurons[l][i]->get_output() + (1 - m_momentum) * m_delta_weights[l][i][j];
+                    m_weights[l][i][j] += m_delta_weights[l][i][j];
+                }
+            }
+        }
+    }
 }

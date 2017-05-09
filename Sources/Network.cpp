@@ -1,41 +1,102 @@
-Layer::Network(size_t S_data_in, size_t N_input = 1, size_t N_hide = 1, size_t N_output = 1, TYPE_NEURON type = STEP, double learning_rate_def = 0.5 ){
+#include "Network.h"
 
-  Layer In = Layer(input,N_input , type, learning_rate_def);
-  Layer out = Layer(N_input, N_hide , type, learning_rate_def);
-  Layer hide = layer(N_hide ,N_output , type, learning_rate_def);
-  Data outputs = Data();
+using namespace std;
 
+Network::Network(size_t input_number, size_t output_number, TYPE_NEURON type, double learning_rate_def, vector<string> labels)
+{
+  m_In      = new Layer (input_number, input_number, type, learning_rate_def);
+  m_Hide    = new Layer (input_number, input_number, type, learning_rate_def);
+  m_Out     = new Layer (input_number, output_number, type, learning_rate_def);
+  m_outputs = new Data  ();
+  m_labels = labels;
 }
+Network::~Network()
+{
+  delete m_In;
+  delete m_Hide;
+  delete m_Out;
+  delete m_outputs;
+}
+bool Network::train(Data input, string name) {
 
-bool Layer::train(Data input, Data output){
+  output_calcul(input);
 
-  In.input = input; // give data to the In-layer
-  In.update_output();// calculate all output of the In-layer
+  vector<double> errors;
+  Data output;
+  for(int i = 0; i < m_labels.size(); i++) {
+    if(m_labels[i] ==  name)
+      output.add_data(1);
+    else
+      output.add_data(0);
+  }
+  for (int i = 0; i < m_Out->size(); i++) {
+    errors.push_back( output.at(i) - m_outputs->at(i));
+  }
+  m_In->get_errors(m_Hide->get_errors(m_Out->get_errors(errors)));
+  m_In->update_layer();
+  m_Hide->update_layer();
+  m_Out->update_layer();
 
-  Hide.input << In;  // give outputs of In-layer to the Hide-layer
-  Hide.update_output();// calculate all output of the Hide-Layer
-
-  Out.input << Hide; // give outputs of Hide-layer to the out-layer
-  Out.update_output();// calculate all output of the Out-layer
-
-  vector<double> errors_for_out;
-
-  for (int i = 0; i <= neurons_tab.size() ; i++) {
-    errors_for_out.push_back( Out.output[i] - output.data[i] );
+  output_calcul(input);
+  for (int i = 0; i < m_Out->size(); i++) {
+      if(output.at(i) - m_outputs->at(i) > (1-PROB_SUCCESS)) {
+        return false;
+      }
+  }
+  return true;
+}
+bool Network::detect(Data input) {
+  output_calcul(input);
+  return get_prob(0);
+}
+void Network::get_max_prob(double *prob, string *output) {
+  double p = 0;
+  string o;
+  for(int i = 0; i < m_outputs->get_size(); i++) {
+    cout << m_labels[i] << " : " << m_outputs->at(i) << " -- ";
+    p = max(m_outputs->at(i), p);
+    if(p == m_outputs->at(i)) {
+      o = m_labels[i];
+    }
+  }
+  *prob = p;
+  cout << endl;
+  *output = o;
+}
+double Network::get_prob(string out) {
+  for(int i = 0; i < m_labels.size(); i++) {
+    if(m_labels[i] == out) {
+      return m_outputs->at(i);
+    }
+  }
+  return -1;
+}
+bool Network::get_prob(int i) {
+  for(int i = 0; i < m_outputs->get_size(); i++)
+  {
+      cout << m_outputs->at(i) << endl;
   }
 
-  Out.update_layer(errors_for_out);
-  Hide.update_layer(Out.get_errors());
+  if(m_outputs->at(i) > PROB_SUCCESS) {
+    return true;
+  }
+  return false;
 }
+void Network::output_calcul(Data input)
+{
+  Data tmp;
+  //cout << endl << endl << "INPUT : " << endl;
+  //input.print();
+  m_In->update_outputs(input);
+  tmp = m_In->get_outputs();
+  //cout << endl << endl << "IN OUTPUT : " << endl;
+  //tmp.print();
+  m_Hide->update_outputs(m_In->get_outputs());
+  m_Out->update_outputs(m_Hide->get_outputs());
 
-string Layer::detect(Data input){
-
-}
-
-void Layer::get_max_prob(double *prob, string *output){
-
-}
-
-double Layer::get_prob(string out){
-
+  tmp = m_Out->get_outputs();
+  m_outputs->clear();
+  for(int i = 0; i < tmp.get_size(); i++) {
+    m_outputs->add_data(tmp.at(i));
+  }
 }

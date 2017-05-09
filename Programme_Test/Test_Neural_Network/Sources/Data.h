@@ -24,6 +24,7 @@ public:
     size_t get_size();
     void   print();
     void   clear();
+    void   normalize();
     double at(int index);
 private:
     // Attribute
