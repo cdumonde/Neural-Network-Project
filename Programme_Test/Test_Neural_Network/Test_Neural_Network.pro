@@ -10,16 +10,26 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = Test_Neural_Network
 TEMPLATE = app
-
+CONFIG += c++11
 
 SOURCES += main.cpp\
 	    mainwindow.cpp \
 	    fonctions.cpp \
-    Sources/Data.cpp
+	    Sources/Data.cpp \
+	    Sources/Network.cpp \
+	    Sources/Neuron.cpp \
+	    Sources/Neuron_Linear.cpp \
+	    Sources/Neuron_Sigmoid.cpp \
+	    Sources/Neuron_Step.cpp
 
 HEADERS  += mainwindow.h \
-    fonctions.h \
-    Sources/Data.h
+	    fonctions.h \
+	    Sources/Data.h \
+	    Sources/Network.h \
+	    Sources/Neuron.h \
+	    Sources/Neuron_Linear.h \
+	    Sources/Neuron_Sigmoid.h \
+	    Sources/Neuron_Step.h
 
 FORMS    += mainwindow.ui
 
