@@ -5,13 +5,17 @@
 #include <string>
 #include "fonctions.h"
 #include "Sources/Data.h"
+#include "Sources/Network.h"
 
 using namespace cv;
 using namespace std;
 
+vector<string> nom_sorties;
 vector<QPushButton*> label;
+vector<QLineEdit*> probs;
 vector<Data> datas;
 vector<Mat*> alphabet;
+Network *net;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -58,6 +62,59 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         label[i]->hide();
     }
+    probs.push_back(ui->lineEdit_4);
+    probs.push_back(ui->lineEdit_5);
+    probs.push_back(ui->lineEdit_6);
+    probs.push_back(ui->lineEdit_7);
+    probs.push_back(ui->lineEdit_8);
+    probs.push_back(ui->lineEdit_9);
+    probs.push_back(ui->lineEdit_10);
+    probs.push_back(ui->lineEdit_11);
+    probs.push_back(ui->lineEdit_12);
+    probs.push_back(ui->lineEdit_13);
+    probs.push_back(ui->lineEdit_14);
+    probs.push_back(ui->lineEdit_15);
+    probs.push_back(ui->lineEdit_16);
+    probs.push_back(ui->lineEdit_17);
+    probs.push_back(ui->lineEdit_18);
+    probs.push_back(ui->lineEdit_19);
+    probs.push_back(ui->lineEdit_20);
+    probs.push_back(ui->lineEdit_21);
+    probs.push_back(ui->lineEdit_22);
+    probs.push_back(ui->lineEdit_23);
+    probs.push_back(ui->lineEdit_24);
+    probs.push_back(ui->lineEdit_25);
+    probs.push_back(ui->lineEdit_26);
+    probs.push_back(ui->lineEdit_27);
+    probs.push_back(ui->lineEdit_28);
+    probs.push_back(ui->lineEdit_29);
+    nom_sorties.push_back("A");
+    nom_sorties.push_back("B");
+    nom_sorties.push_back("C");
+    nom_sorties.push_back("D");
+    nom_sorties.push_back("E");
+    nom_sorties.push_back("F");
+    nom_sorties.push_back("G");
+    nom_sorties.push_back("H");
+    nom_sorties.push_back("I");
+    nom_sorties.push_back("J");
+    nom_sorties.push_back("K");
+    nom_sorties.push_back("L");
+    nom_sorties.push_back("M");
+    nom_sorties.push_back("N");
+    nom_sorties.push_back("O");
+    nom_sorties.push_back("P");
+    nom_sorties.push_back("Q");
+    nom_sorties.push_back("R");
+    nom_sorties.push_back("S");
+    nom_sorties.push_back("T");
+    nom_sorties.push_back("U");
+    nom_sorties.push_back("V");
+    nom_sorties.push_back("W");
+    nom_sorties.push_back("X");
+    nom_sorties.push_back("Y");
+    nom_sorties.push_back("Z");
+    net = new Network(WIDTH*HEIGHT, nom_sorties.size(), 3, SIGMOID, nom_sorties);
 }
 
 MainWindow::~MainWindow()
@@ -97,15 +154,7 @@ void MainWindow::on_pushButton_2_clicked()
 
 void MainWindow::on_horizontalSlider_sliderMoved(int position)
 {
-    switch(position)
-    {
-        case 0:
-            ui->lineEdit->setText("Training...");
-        break;
-        case 1:
-            ui->lineEdit->setText("Detection...");
-        break;
-    }
+
 }
 
 void MainWindow::on_pushButton_3_clicked()
@@ -118,10 +167,31 @@ void MainWindow::on_pushButton_3_clicked()
             datas.push_back(Data((unsigned char*)alphabet[i]->data, alphabet[i]->cols*alphabet[i]->rows));
         }
     }
-    cout << "Nombres d'images : " << datas.size() << endl;
-    for(unsigned int i = 0; i < datas.size(); i++ )
+    if(ui->horizontalSlider->value() == 0)
     {
-        cout << "Image " << i << " : " << endl << "SIZE : " << datas[i].get_size() << endl ;
-        datas[i].print();
+        for(unsigned int i = 0; i < datas.size(); i++) {
+            datas[i].normalize();
+        }
+        float p = 0;
+        while(p < 90) {
+            p = net->train(0.01, 0.95, datas, ui->lineEdit->text().toUtf8().constData());
+        }
+        ui->lineEdit_3->setText(QString::number(p));
+        for(unsigned int i = 0; i < probs.size(); i++)
+        {
+            probs[i]->setText(QString::number(net->get_prob(nom_sorties[i])));
+        }
+        ui->lineEdit->setText("Training Completed !");
+    }
+    else
+    {
+        for(unsigned int i = 0; i < datas.size(); i++) {
+             datas[i].normalize();
+             cout << "Detection Image "<< i << " : " << net->detect(datas[i]) << endl;
+             for(unsigned int i = 0; i < probs.size(); i++)
+             {
+                 probs[i]->setText(QString::number(net->get_prob(nom_sorties[i])));
+             }
+        }
     }
 }
