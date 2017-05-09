@@ -57,8 +57,8 @@ void Data::normalize()
 {
     for(unsigned int i = 0; i < data.size(); i++)
     {
-        //data[i] /= 255.0;
-        data[i] = 255 - data[i];
+        data[i] /= 255.0;
+        data[i] = 1 - data[i];
     }
 }
 double Data::at(int index)

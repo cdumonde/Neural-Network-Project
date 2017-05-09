@@ -174,7 +174,7 @@ void MainWindow::on_pushButton_3_clicked()
         }
         float p = 0;
         while(p < 90) {
-            p = net->train(0.01, 0.95, datas, ui->lineEdit->text().toUtf8().constData());
+            p = net->train(0.01, 0.9, datas, ui->lineEdit->text().toUtf8().constData());
         }
         ui->lineEdit_3->setText(QString::number(p));
         for(unsigned int i = 0; i < probs.size(); i++)
