@@ -13,10 +13,9 @@ public:
   double get_error();
   virtual double threshold(double value)=0;
   virtual double threshold_derivative()=0;
-private:
-  double output;
-  double error;
 protected:
   double input;
+  double output;
+  double error;
 };
 #endif //NEURON_H

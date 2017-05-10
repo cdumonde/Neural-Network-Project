@@ -45,7 +45,7 @@ void Data::print()
 {
     for(unsigned int i = 0; i < data.size(); i++)
     {
-        cout << (double)data[i] << " ";
+        cout << data[i] << " ";
     }
     cout << endl;
 }
@@ -57,8 +57,11 @@ void Data::normalize()
 {
     for(unsigned int i = 0; i < data.size(); i++)
     {
-        data[i] /= 255.0;
-        data[i] = 1 - data[i];
+        //data[i] = data[i] > 200;
+        //data[i] /= 255.0;
+        //data[i] = 1 - data[i];
+        //data[i] = data[i]*4-2;
+        //data[i] = (data[i]>0.5);
     }
 }
 double Data::at(int index)

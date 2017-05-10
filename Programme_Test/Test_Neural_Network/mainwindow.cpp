@@ -3,9 +3,11 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include "fonctions.h"
 #include "Sources/Data.h"
 #include "Sources/Network.h"
+#include <fstream>
 
 using namespace cv;
 using namespace std;
@@ -16,12 +18,14 @@ vector<QLineEdit*> probs;
 vector<Data> datas;
 vector<Mat*> alphabet;
 Network *net;
+vector<Point> *patterns;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    patterns = new vector<Point>;
     label.push_back(ui->pushButton_4);
     label.push_back(ui->pushButton_5);
     label.push_back(ui->pushButton_6);
@@ -114,7 +118,7 @@ MainWindow::MainWindow(QWidget *parent) :
     nom_sorties.push_back("X");
     nom_sorties.push_back("Y");
     nom_sorties.push_back("Z");
-    net = new Network(WIDTH*HEIGHT, nom_sorties.size(), 3, SIGMOID, nom_sorties);
+    net = new Network(SIZE*2, nom_sorties.size(), 3, SIGMOID, nom_sorties);
 }
 
 MainWindow::~MainWindow()
@@ -137,8 +141,10 @@ void MainWindow::on_pushButton_clicked()
         }
         for(unsigned int i = 0; i < alphabet.size(); i++ )
         {
-            label[i]->setIcon(QIcon(QPixmap::fromImage(QImage(alphabet[i]->data, alphabet[i]->cols, alphabet[i]->rows, alphabet[i]->step, QImage::Format_Indexed8))));
-            label[i]->show();
+            if(i < 36) {
+                label[i]->setIcon(QIcon(QPixmap::fromImage(QImage(alphabet[i]->data, alphabet[i]->cols, alphabet[i]->rows, alphabet[i]->step, QImage::Format_Indexed8))));
+                label[i]->show();
+            }
         }
     }
     else
@@ -159,22 +165,52 @@ void MainWindow::on_horizontalSlider_sliderMoved(int position)
 
 void MainWindow::on_pushButton_3_clicked()
 {
+    vector<string> noms;
+    double la;
+    double mom;
+    double p = 0;
+    int k;
     datas.clear();
+    noms.clear();
+
     for(unsigned int i = 0; i < label.size(); i++ )
     {
         if(label[i]->isChecked())
         {
-            datas.push_back(Data((unsigned char*)alphabet[i]->data, alphabet[i]->cols*alphabet[i]->rows));
+            datas.push_back(vecToData(extractPoint(*alphabet[i])));
+            noms.push_back(ui->lineEdit->text().toUtf8().constData());
         }
     }
     if(ui->horizontalSlider->value() == 0)
     {
-        for(unsigned int i = 0; i < datas.size(); i++) {
-            datas[i].normalize();
+        if(datas.empty()) {
+            k = 0;
+            string name_tmp;
+            Data tmp;
+            while(extractPointFromFile("pattern.txt", k, patterns, &name_tmp)) {
+                tmp = vecToData(*patterns);
+                datas.push_back(tmp);
+                noms.push_back(name_tmp);
+                patterns->clear();
+                k++;
+            }
+            p = 0;
+            int run = 0;
+            while(p < 70) {
+                la = 0.01+p*1.2/100;
+                mom = 0.2+p*0.9/100;
+                p = net->train(la, mom, datas, noms);
+                run++;
+                cout <<"Run : "<<  run <<"  ---  Accuracy : "<< p << "  ---  Momentum : " << mom << "  ---  Learning Rate : " << la <<  endl;
+            }
+            for(int i = 0; i < nom_sorties.size(); i++) {
+                probs[i]->setText(QString::number(net->get_prob(nom_sorties[i])));
+            }
         }
-        float p = 0;
-        while(p < 90) {
-            p = net->train(0.01, 0.9, datas, ui->lineEdit->text().toUtf8().constData());
+        else {
+            while(p < 95) {
+                p = net->train(0.01, 0.9, datas, noms);
+            }
         }
         ui->lineEdit_3->setText(QString::number(p));
         for(unsigned int i = 0; i < probs.size(); i++)
@@ -186,7 +222,6 @@ void MainWindow::on_pushButton_3_clicked()
     else
     {
         for(unsigned int i = 0; i < datas.size(); i++) {
-             datas[i].normalize();
              cout << "Detection Image "<< i << " : " << net->detect(datas[i]) << endl;
              for(unsigned int i = 0; i < probs.size(); i++)
              {
@@ -194,4 +229,25 @@ void MainWindow::on_pushButton_3_clicked()
              }
         }
     }
+}
+
+void MainWindow::on_pushButton_40_clicked()
+{
+    string name = "pattern.txt";
+    ofstream file;
+    file.open(name, ios::app);
+    for(unsigned int i = 0; i < label.size(); i++ )
+    {
+        if(label[i]->isChecked())
+        {
+            file << ui->lineEdit->text().toUtf8().constData() << ";";
+            *patterns = extractPoint(*alphabet[i]);
+            for(int j = 0; j < patterns->size(); j++)
+            {
+                file << (*patterns)[j].x << ";" << (*patterns)[j].y <<";";
+            }
+            file << endl;
+        }
+    }
+    file.close();
 }

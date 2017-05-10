@@ -4,7 +4,7 @@
 Network::Network(const size_t input_size, const size_t output_size, const size_t number_of_layers, NEURON_TYPE type, vector<string> labels) {
     m_input_size = input_size;
     m_output_size = output_size;
-    m_hidden_size = (input_size + output_size)/2;
+    m_hidden_size = 50;
     m_number_of_layers = number_of_layers;
     m_probs = new double[m_output_size];
     m_labels = labels;
@@ -55,37 +55,38 @@ string Network::detect(Data input) {
     normalize(output);
     return get_max_prob();
 }
-double Network::train(double learning_rate, double momentum, vector<Data> data, string result) {
+double Network::train(double learning_rate, double momentum, vector<Data> data, vector<string> result) {
     vector<double> intended_output;
     vector<double> errors;
     int incorrect_detections = 0;
     m_learning_rate = learning_rate;
     m_momentum = momentum > 1 ? 1 : momentum;
     m_momentum = m_momentum < 0 ? 0 : m_momentum;
-    for(unsigned int i = 0; i < m_output_size; i++) {
-        if(m_labels[i] == result) {
-            intended_output.push_back(1);
-        }
-        else
-            intended_output.push_back(0);
-    }
     for(unsigned int i = 0; i < data.size(); i++) {
-        detect(data[i]);
+        intended_output.clear();
         for(unsigned int j = 0; j < m_output_size; j++) {
-            errors.push_back(intended_output[j] - m_neurons[m_number_of_layers - 1][j]->get_output());
+                if(m_labels[j] == result[i]) {
+                    intended_output.push_back(1);
+                }
+                else
+                    intended_output.push_back(0);
+          }
+        //cout << endl << endl;
+        detect(data[i]);
+        errors.clear();
+        for(unsigned int j = 0; j < m_output_size; j++) {
+            errors.push_back(intended_output[j] - m_probs[i]);
+            //cout << m_neurons[m_probs[i] << endl;
         }
         backpropagate(errors);
         updateweigths();
+        //cout << get_max_prob() << endl;
     }
-    for(unsigned int i = 0; i < data.size(); i++) {
-        detect(data[i]);
-        for(unsigned int j = 0; j < m_output_size; j++) {
-            if(intended_output[j] - m_probs[j] != 0) {
-                incorrect_detections++;
-            }
-        }
+    for(int i = 0; i < data.size(); i++)
+    {
+            incorrect_detections+=(detect(data[i]) != result[i]);
     }
-    return (100 - ((double)(incorrect_detections)/(data.size()*m_output_size)*100));
+    return (100 - ((double)(incorrect_detections)/(data.size())*100));
 }
 void Network::initializeNeurons(NEURON_TYPE type) {
     vector<Neuron*> tmp;
@@ -142,7 +143,7 @@ void Network::initializeNeurons(NEURON_TYPE type) {
 }
 void Network::initializeWeights() {
     default_random_engine generator;
-    uniform_real_distribution<double> distribution(-0.01, 0.01);
+    uniform_real_distribution<double> distribution(-0.5, 0.5);
     //weights
     m_weights = new double**[m_number_of_layers - 1];
     m_delta_weights = new double**[m_number_of_layers - 1];
@@ -204,6 +205,7 @@ vector<double> Network::calcul_output(Data input) {
     for(unsigned int l = 0; l < m_number_of_layers; l++) {
         if(l == 0) {
             sum = 0;
+            #pragma omp for
             for(unsigned int i = 0; i < m_input_size; i++) {
                 m_neurons[l][i]->set_input(input.at(i));
             }
@@ -211,6 +213,7 @@ vector<double> Network::calcul_output(Data input) {
         else if(l == 1) {
             for(unsigned int j = 0; j < m_hidden_size; j++) {
                 sum = 0;
+                #pragma omp for
                 for(unsigned int i = 0; i < m_input_size + 1; i++) {
                     sum += (m_neurons[l-1][i])->get_output()*m_weights[l-1][i][j];
                 }
@@ -220,6 +223,7 @@ vector<double> Network::calcul_output(Data input) {
         else if(l == m_number_of_layers - 1) {
             for(unsigned int j = 0; j < m_output_size; j++) {
                 sum = 0;
+                #pragma omp for
                 for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
                     sum += (m_neurons[l-1][i])->get_output()*m_weights[l-1][i][j];
                 }
@@ -230,6 +234,7 @@ vector<double> Network::calcul_output(Data input) {
         else {
             for(unsigned int j = 0; j < m_hidden_size; j++) {
                 sum = 0;
+                #pragma omp for
                 for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
                     sum += (m_neurons[l-1][i])->get_output()*m_weights[l-1][i][j];
                 }
@@ -274,18 +279,13 @@ double Network::get_prob(string label) {
 void Network::backpropagate(vector<double> errors) {
     double sum;
     for(unsigned int l = 0; l < m_number_of_layers; l++) {
-        sum = 0;
         if(l == 0) {
-            for(unsigned int i = 0; i < m_input_size + 1; i++) {
-                sum = 0;
-                for(unsigned int j = 0; j < m_hidden_size; j++) {
-                    sum+=m_weights[l][i][j]*(m_neurons[l+1][j]->get_error());
-                }
-            }
+            sum = 0;
         }
         else if(l == m_number_of_layers - 2) {
             for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
                 sum = 0;
+                #pragma omp for
                 for(unsigned int j = 0; j < m_output_size; j++) {
                     sum+=m_weights[l][i][j]*(m_neurons[l+1][j]->get_error());
                 }
@@ -300,6 +300,7 @@ void Network::backpropagate(vector<double> errors) {
         else {
             for(unsigned int i = 0; i < m_hidden_size + 1; i++) {
                 sum = 0;
+                #pragma omp for
                 for(unsigned int j = 0; j < m_hidden_size; j++) {
                     sum+=m_weights[l][i][j]*(m_neurons[l+1][j]->get_error());
                 }
@@ -309,6 +310,7 @@ void Network::backpropagate(vector<double> errors) {
     }
 }
 void Network::updateweigths() {
+    #pragma omp for
     for(unsigned int l = 0; l < m_number_of_layers - 1; l++) {
         if(l == 0) {
             for(unsigned int i = 0; i < m_input_size + 1; i++) {

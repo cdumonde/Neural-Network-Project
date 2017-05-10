@@ -7,6 +7,7 @@
 #include "Neuron_Sigmoid.h"
 #include "Neuron_Step.h"
 #include "Neuron_Linear.h"
+#include <omp.h>
 
 enum NEURON_TYPE { STEP, LINEAR, SIGMOID };
 
@@ -16,12 +17,12 @@ public:
     Network(const size_t input_size, const size_t output_size, const size_t number_of_layers, NEURON_TYPE type, vector<string> labels);
     ~Network();
     string detect(Data input);
-    double train(double learning_rate, double momentum, vector<Data> data, string result);
+    double train(double learning_rate, double momentum, vector<Data> data, vector<string> result);
     vector<double> calcul_output(Data input);
     void normalize(vector<double> output);
     string get_max_prob();
     double get_prob(string label);
-    
+
 private:
     void initializeNeurons(NEURON_TYPE type);
     void initializeWeights();

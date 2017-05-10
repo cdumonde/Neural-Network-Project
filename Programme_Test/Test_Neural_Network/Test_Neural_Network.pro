@@ -11,7 +11,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Test_Neural_Network
 TEMPLATE = app
 CONFIG += c++11
-
+QMAKE_CXXFLAGS+= -fopenmp
+QMAKE_LFLAGS +=  -fopenmp
 SOURCES += main.cpp\
 	    mainwindow.cpp \
 	    fonctions.cpp \
