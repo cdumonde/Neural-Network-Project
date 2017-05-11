@@ -196,8 +196,8 @@ void MainWindow::on_pushButton_3_clicked()
             }
             p = 0;
             int run = 0;
-            while(p < 70) {
-                la = 0.01+p*1.2/100;
+            while(p < 76) {
+                la = 0.01+p*2/100;
                 mom = 0.2+p*0.9/100;
                 p = net->train(la, mom, datas, noms);
                 run++;

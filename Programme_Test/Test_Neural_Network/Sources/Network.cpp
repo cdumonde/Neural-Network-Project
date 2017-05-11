@@ -249,7 +249,7 @@ void Network::normalize(vector<double> output) {
         if(output[i] > 0.9) {
             m_probs[i] = 1;
         }
-        else if(output[i] < 0.1) {
+        else if(output[i] < 0.001) {
             m_probs[i] = 0;
         }
         else {
